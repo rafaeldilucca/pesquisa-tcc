@@ -266,7 +266,7 @@
     ].concat(ordem.map(function (it) {
       return escala({ id: it.id, texto: it.texto, pontos: 7, esq: 'Discordo totalmente', dir: 'Concordo totalmente', comoItem: true });
     })), { aoAvancar: function () {
-      R.Q5_ordem = ordem.map(function (it) { return it.n; }).join('-');
+      R.Q5_ordem = ordem.map(function (it) { return it.id.split('_').pop(); }).join('>');
       R.atitude = media([R.Q5_1_boa, R.Q5_2_util, R.Q5_3_favoravel]);
     } });
   }

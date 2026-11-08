@@ -113,7 +113,7 @@ function abaDicionario_() {
     ['sorteio_local', '', '1 = o sorteio foi feito no navegador porque a planilha não respondeu'],
     ['tempo_anuncio_s', '', 'Segundos na tela do anúncio (mínimo de 5)'],
     ['Q5_1 a Q5_3', 'Q5', '1 = discordo totalmente ... 7 = concordo totalmente; atitude = média dos 3'],
-    ['Q5_ordem', 'Q5', 'Ordem em que os itens apareceram'],
+    ['Q5_ordem', 'Q5', 'Ordem em que os itens apareceram (ex.: util>boa>favoravel)'],
     ['juster', 'Q6', '10 = certamente (99 em 100) ... 0 = nenhuma chance (1 em 100)'],
     ['check_time / check_cor', 'Q8 / Q9', '1 = acertou o time / a cor da peça vista; 0 = errou'],
     ['freq_agua', 'Q11', '1 = nunca ou quase nunca; 2 = algumas vezes por ano; 3 = algumas vezes por mês; 4 = toda semana'],
