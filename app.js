@@ -283,7 +283,7 @@
   }
 
   function pgAtencao() {
-    var base = ['Cor da embalagem', 'Uniforme (camisa) usado pela pessoa', 'Marca da água', 'Pessoa do anúncio', 'Texto do anúncio'];
+    var base = ['Cor da embalagem', 'Uniforme (camisa) usado pela pessoa', 'Marca da água', 'Pessoa do anúncio'];
     var ordem = embaralha(base);
     var ops = ordem.map(function (t) { return { valor: t, rotulo: t }; }).concat([{ valor: 'Outro', rotulo: 'Outro. O quê?', outro: true }]);
     pagina('', [escolha({ id: 'atencao', idOutro: 'atencao_outro', titulo: 'O que mais chamou a sua atenção no anúncio?', opcoes: ops })]);

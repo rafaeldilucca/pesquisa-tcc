@@ -5,5 +5,5 @@ window.PESQUISA_CONFIG = {
   urlPlanilha: 'https://script.google.com/macros/s/AKfycbyZnpqN4JKSb_rO9Cly1tkI116wZBFBC_aZ3ZJw3n8R40YTPXsoWs8w4XZaN652pt_GoA/exec',
   email: 'rafaeldilucca41@gmail.com',
   marca: 'Aqua Naturale',
-  versao: 'v2-2026-11-07'
+  versao: 'v2.1-2026-11-08'
 };
