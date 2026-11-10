@@ -20,8 +20,10 @@ var COLUNAS = [
   'Q15_ordem',
   'Q15A_1_representa', 'Q15A_2_usar', 'Q15A_3_impressao', 'Q15A_4_bonita', 'Q15A_5_preco', 'valor_A',
   'Q15B_1_representa', 'Q15B_2_usar', 'Q15B_3_impressao', 'Q15B_4_bonita', 'Q15B_5_preco', 'valor_B',
-  'escolha', 'Q16_ordem', 'instrucao', 'renda'
+  'escolha', 'Q16_ordem', 'instrucao', 'renda',
+  'escolha_hipotetica', 'Q16b_ordem'   // versão 2.2 em diante (colunas novas sempre no fim)
 ];
+var VERSAO_SCRIPT = '2.2';
 var GRUPOS = { FLA: ['FLA-A', 'FLA-B'], VAS: ['VAS-A', 'VAS-B'], SEL: ['SEL-A', 'SEL-B'] };
 
 function doPost(e) {
@@ -53,35 +55,43 @@ function doPost(e) {
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
+  var versao = versaoCurta_(p.versao);
   if (p.acao === 'sortear' && GRUPOS[p.grupo]) {
     var lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
       var props = PropertiesService.getScriptProperties();
       var duas = GRUPOS[p.grupo];
-      var a = Number(props.getProperty('sorteio_' + duas[0]) || 0);
-      var b = Number(props.getProperty('sorteio_' + duas[1]) || 0);
+      var a = Number(props.getProperty(chave_(versao, duas[0])) || 0);
+      var b = Number(props.getProperty(chave_(versao, duas[1])) || 0);
       var peca = a < b ? duas[0] : b < a ? duas[1] : duas[Math.random() < 0.5 ? 0 : 1];
-      props.setProperty('sorteio_' + peca, String((peca === duas[0] ? a : b) + 1));
+      props.setProperty(chave_(versao, peca), String((peca === duas[0] ? a : b) + 1));
+      props.setProperty('versao_atual', versao);
       return saida_({ ok: true, peca: peca });
     } finally {
       lock.releaseLock();
     }
   }
-  return saida_({ ok: true, mensagem: 'Pesquisa TCC: recebendo respostas.', sorteios: contagemSorteios_() });
+  var atual = p.versao ? versao : (PropertiesService.getScriptProperties().getProperty('versao_atual') || '');
+  return saida_({ ok: true, mensagem: 'Pesquisa TCC: recebendo respostas.', script: VERSAO_SCRIPT,
+                  versao_questionario: atual, sorteios: contagemSorteios_(atual) });
 }
 
-function contagemSorteios_() {
+// Cada versão do questionário tem a sua própria contagem: ao mudar de versão, o equilíbrio recomeça do zero.
+function versaoCurta_(v) { return String(v || '').split('-')[0]; }
+function chave_(versao, peca) { return 'sorteio_' + (versao ? versao + '_' : '') + peca; }
+
+function contagemSorteios_(versao) {
   var props = PropertiesService.getScriptProperties();
   var c = {};
-  Object.keys(GRUPOS).forEach(function (g) { GRUPOS[g].forEach(function (p) { c[p] = Number(props.getProperty('sorteio_' + p) || 0); }); });
+  Object.keys(GRUPOS).forEach(function (g) { GRUPOS[g].forEach(function (p) { c[p] = Number(props.getProperty(chave_(versao, p)) || 0); }); });
   return c;
 }
 
-/** Rode manualmente depois do piloto para recomeçar o equilíbrio do sorteio do zero. */
+/** Rode manualmente para recomeçar o equilíbrio do sorteio do zero (todas as versões). */
 function zerarSorteio() {
   var props = PropertiesService.getScriptProperties();
-  Object.keys(GRUPOS).forEach(function (g) { GRUPOS[g].forEach(function (p) { props.deleteProperty('sorteio_' + p); }); });
+  Object.keys(props.getProperties()).forEach(function (k) { if (k.indexOf('sorteio_') === 0) props.deleteProperty(k); });
 }
 
 function abaRespostas_() {
@@ -96,13 +106,28 @@ function abaRespostas_() {
     sh.appendRow(COLUNAS);
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, COLUNAS.length).setFontWeight('bold');
+  } else if (sh.getLastColumn() < COLUNAS.length) {
+    // colunas novas de uma versão mais recente do questionário: completa o cabeçalho
+    sh.getRange(1, 1, 1, COLUNAS.length).setValues([COLUNAS]).setFontWeight('bold');
   }
   return sh;
 }
 
 function abaDicionario_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (ss.getSheetByName('Dicionario')) return;
+  var existente = ss.getSheetByName('Dicionario');
+  if (existente) {
+    var colA = existente.getRange(1, 1, existente.getLastRow(), 1).getValues().map(function (r) { return r[0]; });
+    if (colA.indexOf('escolha_hipotetica') < 0) {
+      var novas = [
+        ['escolha_hipotetica', 'Q16b', 'A; B; nenhuma: escolha supondo nunca ter tido camisa do time (versão 2.2 em diante)'],
+        ['Q16b_ordem', 'Q16b', 'Qual camisa apareceu primeiro'],
+        ['versao', '', 'v2.2 em diante: apresentação sem o objetivo, Q5 sem "muito", Juster só com texto (sem "x em 10") e Q16b. Respostas de versões anteriores ficam fora da análise principal.']
+      ];
+      existente.getRange(existente.getLastRow() + 1, 1, novas.length, 3).setValues(novas);
+    }
+    return;
+  }
   var sh = ss.insertSheet('Dicionario');
   var linhas = [
     ['Coluna', 'Pergunta', 'Codificação'],
@@ -114,13 +139,15 @@ function abaDicionario_() {
     ['tempo_anuncio_s', '', 'Segundos na tela do anúncio (mínimo de 5)'],
     ['Q5_1 a Q5_3', 'Q5', '1 = discordo totalmente ... 7 = concordo totalmente; atitude = média dos 3'],
     ['Q5_ordem', 'Q5', 'Ordem em que os itens apareceram (ex.: util>boa>favoravel)'],
-    ['juster', 'Q6', '10 = certamente (99 em 100) ... 0 = nenhuma chance (1 em 100)'],
+    ['juster', 'Q6', '10 = certamente ou praticamente certo ... 0 = nenhuma chance ou quase nenhuma chance'],
     ['check_time / check_cor', 'Q8 / Q9', '1 = acertou o time / a cor da peça vista; 0 = errou'],
     ['freq_agua', 'Q11', '1 = nunca ou quase nunca; 2 = algumas vezes por ano; 3 = algumas vezes por mês; 4 = toda semana'],
     ['gosta_futebol, intensidade, intensidade_sel', 'Q12 a Q14', '1 = discordo totalmente ... 5 = concordo totalmente; vazio = não se aplica'],
     ['Q15A_* / Q15B_*', 'Q15', 'Itens sobre a camisa A e a camisa B do grupo, 1 a 5; valor_A e valor_B = médias'],
     ['Q15_ordem / Q16_ordem', 'Q15 / Q16', 'Qual camisa apareceu primeiro'],
     ['escolha', 'Q16', 'A; B; nenhuma'],
+    ['escolha_hipotetica', 'Q16b', 'A; B; nenhuma: escolha supondo nunca ter tido camisa do time (versão 2.2 em diante)'],
+    ['Q16b_ordem', 'Q16b', 'Qual camisa apareceu primeiro'],
     ['instrucao', 'Q17', '1 = fundamental incompleto; 2 = fundamental completo; 3 = médio incompleto; 4 = médio completo; 5 = superior incompleto; 6 = superior completo; 7 = pós-graduação'],
     ['renda', 'Q18', '1 = até R$ 3.000; 2 = R$ 3.001 a 6.000; 3 = R$ 6.001 a 10.000; 4 = R$ 10.001 a 20.000; 5 = acima de R$ 20.000; 9 = prefiro não responder'],
     ['tempo_total_s', '', 'Segundos entre o consentimento e o envio']

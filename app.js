@@ -23,9 +23,9 @@
     'SEL-B': { img: 'img/sel-b.jpg', cor: 'Azul', alt: 'Homem sorrindo segura uma garrafa de água. Ele veste a camisa azul da Seleção Brasileira.' }
   };
   var GRUPOS = {
-    FLA: { pecas: ['FLA-A', 'FLA-B'], time: 'Flamengo', representa: 'o Flamengo' },
-    VAS: { pecas: ['VAS-A', 'VAS-B'], time: 'Vasco da Gama', representa: 'o Vasco' },
-    SEL: { pecas: ['SEL-A', 'SEL-B'], time: 'Seleção Brasileira', representa: 'a Seleção Brasileira' }
+    FLA: { pecas: ['FLA-A', 'FLA-B'], time: 'Flamengo', representa: 'o Flamengo', de: 'do Flamengo' },
+    VAS: { pecas: ['VAS-A', 'VAS-B'], time: 'Vasco da Gama', representa: 'o Vasco', de: 'do Vasco' },
+    SEL: { pecas: ['SEL-A', 'SEL-B'], time: 'Seleção Brasileira', representa: 'a Seleção Brasileira', de: 'da Seleção Brasileira' }
   };
 
   var R = {};                 // respostas, com os nomes das colunas da planilha
@@ -182,7 +182,7 @@
   // ---------- sequência ----------
   var PAGINAS = [
     pgApresentacao, pgIdade, pgLocal, pgPerfil, pgAnuncio, pgAtitude, pgJuster,
-    pgAtencao, pgChecagem, pgControles, pgFutebol, pgCamisa1, pgCamisa2, pgEscolha, pgPerfilFinal
+    pgAtencao, pgChecagem, pgControles, pgFutebol, pgCamisa1, pgCamisa2, pgEscolha, pgEscolhaSemCamisa, pgPerfilFinal
   ];
 
   function progresso() {
@@ -198,7 +198,7 @@
       { valor: 'Sim', rotulo: 'Sim, concordo' }, { valor: 'Não', rotulo: 'Não concordo' }] });
     var contato = el('p', {}, ['Em caso de dúvida, escreva para ', el('a', { href: 'mailto:' + EMAIL, texto: EMAIL }), '.']);
     pagina('Olá!', [
-      par('Esta pesquisa faz parte do Trabalho de Conclusão de Curso de Rafael Di Lucca, aluno da graduação em Administração da FGV EBAPE, orientado pelo professor Daniel Kamlot. O objetivo é entender como as pessoas avaliam anúncios de produtos do dia a dia.'),
+      par('Esta pesquisa faz parte do Trabalho de Conclusão de Curso de Rafael Di Lucca, aluno da graduação em Administração da FGV EBAPE, orientado pelo professor Daniel Kamlot.'),
       par('Você verá um anúncio e responderá a algumas perguntas. Isso leva cerca de 5 minutos, e não há respostas certas ou erradas. A participação é voluntária e anônima, e você pode desistir a qualquer momento. As respostas serão analisadas em conjunto e usadas apenas para fins acadêmicos.'),
       contato, c
     ], { foco: false, aoAvancar: function () {
@@ -256,9 +256,9 @@
 
   function pgAtitude() {
     var itens = [
-      { id: 'Q5_1_boa', n: 1, texto: 'Acho que a ' + MARCA + ' é uma água muito boa.' },
-      { id: 'Q5_2_util', n: 2, texto: 'Acho que a ' + MARCA + ' é uma água muito útil para o meu dia a dia.' },
-      { id: 'Q5_3_favoravel', n: 3, texto: 'Minha opinião sobre a ' + MARCA + ' é muito favorável.' }
+      { id: 'Q5_1_boa', n: 1, texto: 'Acho que a ' + MARCA + ' é uma água boa.' },
+      { id: 'Q5_2_util', n: 2, texto: 'Acho que a ' + MARCA + ' é uma água útil para o meu dia a dia.' },
+      { id: 'Q5_3_favoravel', n: 3, texto: 'Minha opinião sobre a ' + MARCA + ' é favorável.' }
     ];
     var ordem = embaralha(itens);
     pagina('', [
@@ -273,11 +273,11 @@
 
   function pgJuster() {
     var ops = [
-      [10, 'Certamente ou praticamente certo (99 em 100)'], [9, 'Quase que com certeza (9 em 10)'],
-      [8, 'Muito provável (8 em 10)'], [7, 'Provável (7 em 10)'], [6, 'Boa possibilidade (6 em 10)'],
-      [5, 'Razoável possibilidade (5 em 10)'], [4, 'Alguma possibilidade (4 em 10)'],
-      [3, 'Pequena possibilidade (3 em 10)'], [2, 'Escassa possibilidade (2 em 10)'],
-      [1, 'Probabilidade insignificante (1 em 10)'], [0, 'Nenhuma chance ou quase nenhuma chance (1 em 100)']
+      [10, 'Certamente ou praticamente certo'], [9, 'Quase que com certeza'],
+      [8, 'Muito provável'], [7, 'Provável'], [6, 'Boa possibilidade'],
+      [5, 'Razoável possibilidade'], [4, 'Alguma possibilidade'],
+      [3, 'Pequena possibilidade'], [2, 'Escassa possibilidade'],
+      [1, 'Probabilidade insignificante'], [0, 'Nenhuma chance ou quase nenhuma chance']
     ].map(function (o) { return { valor: o[0], rotulo: o[1] }; });
     pagina('', [escolha({ id: 'juster', titulo: 'Imagine que essa água estivesse à venda nos lugares onde você costuma comprar. Você compraria o produto anunciado nos próximos 30 dias?', opcoes: ops })]);
   }
@@ -350,12 +350,18 @@
   function pgCamisa2() { paginaCamisa(ordemCamisas[1], 2); }
 
   function pgEscolha() {
+    escolhaCamisas('escolha', 'Q16_ordem', 'Se pudesse ganhar uma dessas camisas, qual escolheria?');
+  }
+  function pgEscolhaSemCamisa() {
+    escolhaCamisas('escolha_hipotetica', 'Q16b_ordem', 'Agora, suponha que você não tem nem nunca teve nenhuma camisa ' + GRUPOS[R.grupo].de + '. Se pudesse ganhar uma dessas camisas, qual escolheria?');
+  }
+  function escolhaCamisas(campo, campoOrdem, titulo) {
     var g = GRUPOS[R.grupo];
     var ordem = embaralha(['A', 'B']);
-    R.Q16_ordem = ordem.join('-');
+    R[campoOrdem] = ordem.join('-');
     var nome = uid('f'), escolhido = null;
     var fs = el('fieldset', { classe: 'pergunta' });
-    fs.appendChild(el('legend', { texto: 'Se pudesse ganhar uma dessas camisas, qual escolheria?' }));
+    fs.appendChild(el('legend', { texto: titulo }));
     var fotos = el('div', { classe: 'escolha-fotos' });
     var todas = [];
     function marca(lab, v) {
@@ -381,7 +387,7 @@
       el: fs,
       valido: function () { return !!escolhido; },
       falta: function () { marcaFalta(fs, 'Escolha uma opção para continuar.'); },
-      coletar: function () { R.escolha = escolhido; }
+      coletar: function () { R[campo] = escolhido; }
     }]);
   }
 
@@ -408,7 +414,7 @@
     if (!URL_PLANILHA || TESTE) return Promise.resolve(aleatoria);
     var ctl = window.AbortController ? new AbortController() : null;
     var tm = setTimeout(function () { if (ctl) ctl.abort(); }, 4000);
-    return fetch(URL_PLANILHA + '?acao=sortear&grupo=' + grupo, ctl ? { signal: ctl.signal } : {})
+    return fetch(URL_PLANILHA + '?acao=sortear&grupo=' + grupo + '&versao=' + encodeURIComponent(VERSAO), ctl ? { signal: ctl.signal } : {})
       .then(function (r) { return r.json(); })
       .then(function (j) { clearTimeout(tm); return (j && duas.indexOf(j.peca) >= 0) ? j.peca : aleatoria; })
       .catch(function () { clearTimeout(tm); R.sorteio_local = 1; return aleatoria; });
